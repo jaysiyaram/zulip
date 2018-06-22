@@ -28,7 +28,8 @@ from zerver.lib.response import (
 )
 
 from zerver.lib.streams import (
-    access_stream_by_id, access_stream_by_name, filter_stream_authorization
+    access_stream_by_id, access_stream_by_name, filter_stream_authorization,
+    list_to_streams,
 )
 
 from zerver.lib.stream_subscription import (
@@ -2127,6 +2128,17 @@ class SubscriptionAPITest(ZulipTestCase):
         self.assertEqual(filter_stream_authorization(guest_user, [stream]),
                          ([], [stream]))
 
+        # Test UserProfile.can_create_streams for guest users.
+        streams_raw = [{
+            'invite_only': False,
+            'history_public_to_subscribers': None,
+            'name': 'new_stream',
+            'is_announcement_only': False
+        }]
+
+        with self.assertRaisesRegex(JsonableError, "User cannot create streams."):
+            list_to_streams(streams_raw, guest_user)
+
         stream = self.make_stream('private_stream', invite_only=True)
         result = self.common_subscribe_to_streams(guest_email, ["private_stream"])
         self.assert_json_error(result, "Not allowed for guest users")
@@ -2887,8 +2899,7 @@ class GetSubscribersTest(ZulipTestCase):
         self.assert_json_success(ret)
 
         msg = '''
-            Hi there!  We thought you'd like to know that King Hamlet
-            just subscribed you to the following streams:
+            Hi there! King Hamlet just subscribed you to the following streams:
 
             * #**stream_0**
             * #**stream_1**
@@ -2900,8 +2911,6 @@ class GetSubscribersTest(ZulipTestCase):
             * #**stream_7**
             * #**stream_8**
             * #**stream_9**
-
-            You can see historical content on a non-invite-only stream by narrowing to it.
             '''
 
         self.assert_user_got_subscription_notification(msg)
@@ -2924,9 +2933,7 @@ class GetSubscribersTest(ZulipTestCase):
         self.assert_json_success(ret)
 
         msg = '''
-            Hi there!  We thought you'd like to know that King Hamlet
-            just subscribed you to the **invite-only** stream
-            #**stream_invite_only_1**.
+            Hi there! King Hamlet just subscribed you to the stream #**stream_invite_only_1**.
             '''
         self.assert_user_got_subscription_notification(msg)
 

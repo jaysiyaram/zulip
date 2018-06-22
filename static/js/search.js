@@ -2,8 +2,17 @@ var search = (function () {
 
 var exports = {};
 
+// Exported for unit testing
+exports.is_using_input_method = false;
+
 function narrow_or_search_for_term(search_string) {
     var search_query_box = $("#search_query");
+    if (exports.is_using_input_method) {
+        // Neither narrow nor search when using input tools as
+        // `updater` is also triggered when 'enter' is triggered
+        // while using input tool
+        return search_query_box.val();
+    }
     ui_util.change_tab_to('#home');
     var operators = Filter.parse(search_string);
     narrow.activate(operators, {trigger: 'search'});
@@ -19,16 +28,16 @@ function narrow_or_search_for_term(search_string) {
 }
 
 function update_buttons_with_focus(focused) {
-    var search_query = $('#search_query');
+    var search_query_box = $('#search_query');
 
     // Show buttons iff the search input is focused, or has non-empty contents,
     // or we are narrowed.
     if (focused
-        || search_query.val()
+        || search_query_box.val()
         || narrow_state.active()) {
         $('.search_button').prop('disabled', false);
     } else {
-        $('.search_button').attr('disabled', 'disabled');
+        $('.search_button').prop('disabled', true);
     }
 }
 
@@ -37,6 +46,8 @@ exports.update_button_visibility = function () {
 };
 
 exports.initialize = function () {
+    var search_query_box = $('#search_query');
+    var searchbox_form = $('#searchbox_form');
 
     // Data storage for the typeahead.
     // This maps a search string to an object with a "description" field.
@@ -45,7 +56,7 @@ exports.initialize = function () {
     // just represents the key of the hash, so it's redundant.)
     var search_object = {};
 
-    $("#search_query").typeahead({
+    search_query_box.typeahead({
         source: function (query) {
             var suggestions = search_suggestion.get_suggestions(query);
             // Update our global search_object hash
@@ -69,20 +80,30 @@ exports.initialize = function () {
         },
     });
 
-    $("#searchbox_form").keydown(function (e) {
+    searchbox_form.on('compositionend', function () {
+        // Set `is_using_input_method` to true if enter is pressed to exit
+        // the input tool popover and get the text in the search bar. Then
+        // we suppress searching triggered by this enter key by checking
+        // `is_using_input_method` before searching.
+        // More details in the commit message that added this line.
+        exports.is_using_input_method = true;
+    });
+
+    searchbox_form.keydown(function (e) {
         exports.update_button_visibility();
         var code = e.which;
-        var search_query_box = $("#search_query");
         if (code === 13 && search_query_box.is(":focus")) {
             // Don't submit the form so that the typeahead can instead
             // handle our Enter keypress. Any searching that needs
             // to be done will be handled in the keyup.
-            e.preventDefault();
             return false;
         }
     }).keyup(function (e) {
+        if (exports.is_using_input_method) {
+            exports.is_using_input_method = false;
+            return;
+        }
         var code = e.which;
-        var search_query_box = $("#search_query");
         if (code === 13 && search_query_box.is(":focus")) {
             // We just pressed enter and the box had focus, which
             // means we didn't use the typeahead at all.  In that
@@ -101,9 +122,8 @@ exports.initialize = function () {
     // more work to re-order everything and make them private.
     $('#search_exit').on('click', exports.clear_search);
 
-    var query = $('#search_query');
-    query.on('focus', exports.focus_search);
-    query.on('blur' , function () {
+    search_query_box.on('focus', exports.focus_search);
+    search_query_box.on('blur' , function () {
         // The search query box is a visual cue as to
         // whether search or narrowing is active.  If
         // the user blurs the search box, then we should
@@ -121,7 +141,7 @@ exports.initialize = function () {
 
         setTimeout(function () {
             var search_string = narrow_state.search_string();
-            query.val(search_string);
+            search_query_box.val(search_string);
             exports.update_button_visibility();
         }, 100);
     });

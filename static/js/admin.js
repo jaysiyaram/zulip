@@ -56,7 +56,7 @@ exports.setup_page = function () {
         realm_name_changes_disabled: page_params.realm_name_changes_disabled,
         realm_email_changes_disabled: page_params.realm_email_changes_disabled,
         realm_add_emoji_by_admins_only: page_params.realm_add_emoji_by_admins_only,
-        can_admin_emojis: page_params.is_admin || !page_params.realm_add_emoji_by_admins_only,
+        can_add_emojis: settings_emoji.can_add_emoji(),
         realm_allow_community_topic_editing: page_params.realm_allow_community_topic_editing,
         realm_message_content_edit_limit_minutes:
             settings_org.get_realm_time_limits_in_minutes('realm_message_content_edit_limit_seconds'),
@@ -70,6 +70,7 @@ exports.setup_page = function () {
         realm_notifications_stream_id: page_params.realm_notifications_stream_id,
         realm_signup_notifications_stream_id: page_params.realm_signup_notifications_stream_id,
         is_admin: page_params.is_admin,
+        is_guest: page_params.is_guest,
         realm_icon_source: page_params.realm_icon_source,
         realm_icon_url: page_params.realm_icon_url,
         realm_mandatory_topics: page_params.realm_mandatory_topics,

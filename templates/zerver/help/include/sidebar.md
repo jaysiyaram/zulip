@@ -49,8 +49,8 @@
 * [Navigation and unread counts](/help/unread-counter-and-pointer)
 * [View the Markdown source of a message](/help/view-the-markdown-source-of-a-message)
 * [View the exact time a message was sent](/help/view-the-exact-time-a-message-was-sent)
-* [View an image at full size](/help/view-an-image-at-full-size)
-* [See all images in a narrow](/help/view-an-image-at-full-size)
+* [View an image at full size](/help/viewing-images)
+* [See all images in a narrow](/help/viewing-images#see-all-images-in-a-narrow)
 * [Collapse a message](/help/collapse-a-message)
 * [Star a message](/help/star-a-message)
 * [Emoji reactions](/help/add-an-emoji-reaction-to-a-message)
@@ -93,9 +93,10 @@
 
 ## Tools & customization
 * [Bots and integrations](/help/add-a-bot-or-integration)
-* [Enable high contrast mode](/help/enable-high-contrast-mode)
-* [Enable night mode](/help/enable-night-mode)
+* [High contrast mode](/help/high-contrast-mode)
+* [Night mode](/help/night-mode)
 * [Enable emoticon translations](/help/enable-emoticon-translations)
+* [Display emoji as text](/help/display-emoji-as-text)
 * [Display the buddy list on narrow screens](/help/move-the-users-list-to-the-left-sidebar)
 * [View organization statistics](/help/analytics)
 
@@ -112,7 +113,7 @@
 # Zulip administration
 
 ## Organization basics
-* [Create your organization's profile](/help/create-your-organization-profile)
+* [Create your organization profile](/help/create-your-organization-profile)
 * [Update your organization's settings](/help/change-your-organization-settings)
 * [Link to your Zulip from the web](/help/join-zulip-chat-badge)
 * [Import data from Slack](/help/import-data-from-slack)
@@ -121,6 +122,7 @@
 * [Allow joining without an invitation](/help/allow-anyone-to-join-without-an-invitation)
 * [Manage who can send invitations](/help/only-allow-admins-to-invite-new-users)
 * [Set the default language for new users](/help/change-the-default-language-for-your-organization)
+* [Deactivate your organization](/help/deactivate-your-organization)
 * [GDPR Compliance](/help/gdpr-compliance)
 
 ## Organization settings
@@ -147,7 +149,7 @@
 * [View all bots in your organization](/help/view-all-bots-in-your-organization)
 
 ## Stream management
-* [Stream permissions](/help/stream-privacy-settings)
+* [Stream permissions](/help/stream-permissions)
 * [Delete or archive a stream](/help/delete-a-stream)
 * [Set default streams for new users](/help/set-default-streams-for-new-users)
 * [Rename a stream](/help/rename-a-stream)

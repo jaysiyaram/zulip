@@ -1,17 +1,4 @@
-// TODO: make an initialize function for list_render.
-const initialize = (function () {
-    var initalize_function;
-
-    set_global('$', (f) => {
-        initalize_function = f;
-    });
-
-    // We can move this module scope when we have
-    // an explicit initialize function.
-    zrequire('list_render');
-
-    return initalize_function;
-}());
+zrequire('list_render');
 
 // We need these stubs to get by instanceof checks.
 // The list_render library allows you to insert objects
@@ -22,27 +9,12 @@ set_global('Element', function () {
     return { };
 });
 
-// This function will be the anonymous click handler
-// for clicking on any element that matches the
-// CSS selector of "[data-sort]".
-var handle_sort_click;
-
 // We only need very simple jQuery wrappers for when the
 // "real" code wraps html or sets up click handlers.
 // We'll simulate most other objects ourselves.
 set_global('$', (arg) => {
     if (arg.to_jquery) {
         return arg.to_jquery();
-    }
-
-    if (arg === 'body') {
-        return {
-            on: (event_name, selector, f) => {
-                assert.equal(event_name, 'click');
-                assert.equal(selector, '[data-sort]');
-                handle_sort_click = f;
-            },
-        };
     }
 
     return {
@@ -142,7 +114,7 @@ run_test('list_render', () => {
         modifier: (item) => div(item),
     };
 
-    const widget = list_render(container, list, opts);
+    const widget = list_render.create(container, list, opts);
 
     widget.render();
 
@@ -265,8 +237,7 @@ run_test('sorting', () => {
         return _.map(people, opts.modifier).join('');
     }
 
-    list_render(container, list, opts);
-    initialize();
+    list_render.create(container, list, opts);
 
     var button_opts;
     var button;
@@ -281,7 +252,7 @@ run_test('sorting', () => {
 
     button = sort_button(button_opts);
 
-    handle_sort_click.call(button);
+    list_render.handle_sort.call(button);
 
     assert(cleared);
     assert(button.siblings_deactivated);
@@ -302,7 +273,7 @@ run_test('sorting', () => {
     cleared = false;
     button.siblings_deactivated = false;
 
-    handle_sort_click.call(button);
+    list_render.handle_sort.call(button);
 
     assert(cleared);
     assert(button.siblings_deactivated);

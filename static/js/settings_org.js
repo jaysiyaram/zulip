@@ -99,11 +99,16 @@ exports.get_realm_time_limits_in_minutes = function (property) {
 
 function get_property_value(property_name) {
     var value;
+
     if (property_name === 'realm_message_content_edit_limit_minutes') {
         return exports.get_realm_time_limits_in_minutes('realm_message_content_edit_limit_seconds');
-    } else if (property_name === 'realm_message_content_delete_limit_minutes') {
+    }
+
+    if (property_name === 'realm_message_content_delete_limit_minutes') {
         return exports.get_realm_time_limits_in_minutes('realm_message_content_delete_limit_seconds');
-    } else if (property_name === 'realm_create_stream_permission') {
+    }
+
+    if (property_name === 'realm_create_stream_permission') {
         if (page_params.realm_create_stream_by_admins_only) {
             return "by_admins_only";
         }
@@ -114,12 +119,16 @@ function get_property_value(property_name) {
             return "by_admin_user_with_three_days_old";
         }
         return "by_admin_user_with_custom_time";
-    } else if (property_name === 'realm_add_emoji_by_admins_only') {
+    }
+
+    if (property_name === 'realm_add_emoji_by_admins_only') {
         if (page_params.realm_add_emoji_by_admins_only) {
             return "by_admins_only";
         }
         return "by_anyone";
-    } else if (property_name === 'realm_msg_edit_limit_setting') {
+    }
+
+    if (property_name === 'realm_msg_edit_limit_setting') {
         if (!page_params.realm_allow_message_editing) {
             return "never";
         }
@@ -130,7 +139,9 @@ function get_property_value(property_name) {
             return "custom_limit";
         }
         return value;
-    } else if (property_name === 'realm_msg_delete_limit_setting') {
+    }
+
+    if (property_name === 'realm_msg_delete_limit_setting') {
         if (!page_params.realm_allow_message_deleting) {
             return "never";
         }
@@ -141,7 +152,9 @@ function get_property_value(property_name) {
             return "custom_limit";
         }
         return value;
-    } else if (property_name === 'realm_org_join_restrictions') {
+    }
+
+    if (property_name === 'realm_org_join_restrictions') {
         if (page_params.realm_restricted_to_domain) {
             return "only_selected_domain";
         }
@@ -149,7 +162,9 @@ function get_property_value(property_name) {
             return "no_disposable_email";
         }
         return "no_restriction";
-    } else if (property_name === 'realm_user_invite_restriction') {
+    }
+
+    if (property_name === 'realm_user_invite_restriction') {
         if (!page_params.realm_invite_required) {
             return "no_invite_required";
         }
@@ -158,6 +173,7 @@ function get_property_value(property_name) {
         }
         return "by_anyone";
     }
+
     return page_params[property_name];
 }
 
@@ -332,7 +348,7 @@ exports.populate_notifications_stream_dropdown = function (stream_list) {
     var dropdown_list_body = $("#id_realm_notifications_stream .dropdown-list-body").expectOne();
     var search_input = $("#id_realm_notifications_stream .dropdown-search > input[type=text]");
 
-    list_render(dropdown_list_body, stream_list, {
+    list_render.create(dropdown_list_body, stream_list, {
         name: "admin-realm-notifications-stream-dropdown-list",
         modifier: function (item) {
             return templates.render("admin-realm-dropdown-stream-list", { stream: item });
@@ -363,7 +379,7 @@ exports.populate_signup_notifications_stream_dropdown = function (stream_list) {
     var dropdown_list_body = $("#id_realm_signup_notifications_stream .dropdown-list-body").expectOne();
     var search_input = $("#id_realm_signup_notifications_stream .dropdown-search > input[type=text]");
 
-    list_render(dropdown_list_body, stream_list, {
+    list_render.create(dropdown_list_body, stream_list, {
         name: "admin-realm-signup-notifications-stream-dropdown-list",
         modifier: function (item) {
             return templates.render("admin-realm-dropdown-stream-list", { stream: item });

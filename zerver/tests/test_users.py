@@ -18,10 +18,10 @@ from zerver.lib.test_classes import (
 from zerver.lib.test_runner import slow
 
 from zerver.models import UserProfile, Recipient, \
-    Realm, RealmDomain, UserActivity, \
+    Realm, RealmDomain, UserActivity, UserHotspot, \
     get_user, get_realm, get_client, get_stream, get_stream_recipient, \
-    get_membership_realms, get_source_profile, \
-    Message, get_context_for_message, ScheduledEmail, check_valid_user_id
+    get_source_profile, Message, get_context_for_message, \
+    ScheduledEmail, check_valid_user_ids
 
 from zerver.lib.avatar import avatar_url
 from zerver.lib.email_mirror import create_missed_message_address
@@ -38,7 +38,8 @@ from zerver.lib.actions import (
 from zerver.lib.create_user import copy_user_settings
 from zerver.lib.topic_mutes import add_topic_mute
 from zerver.lib.stream_topic import StreamTopicTarget
-from zerver.lib.users import user_ids_to_users, access_user_by_id
+from zerver.lib.users import user_ids_to_users, access_user_by_id, \
+    get_accounts_for_email
 
 from django.conf import settings
 
@@ -168,7 +169,7 @@ class PermissionTest(ZulipTestCase):
         hamlet = self.example_user('hamlet')
         req = dict(full_name=ujson.dumps(new_name))
         result = self.client_patch('/json/users/{}'.format(hamlet.id), req)
-        self.assertTrue(result.status_code == 200)
+        self.assert_json_success(result)
         hamlet = self.example_user('hamlet')
         self.assertEqual(hamlet.full_name, new_name)
 
@@ -321,32 +322,37 @@ class UserProfileTest(ZulipTestCase):
         bot = self.example_user("welcome_bot")
 
         # Invalid user ID
-        invalid_uid = 1000
-        self.assertEqual(check_valid_user_id(realm.id, invalid_uid),
+        invalid_uid = 1000  # type: Any
+        self.assertEqual(check_valid_user_ids(realm.id, invalid_uid),
+                         "User IDs is not a list")
+        self.assertEqual(check_valid_user_ids(realm.id, [invalid_uid]),
                          "Invalid user ID: %d" % (invalid_uid))
-        self.assertEqual(check_valid_user_id(realm.id, "abc"),
-                         "User id is not an integer")
-        self.assertEqual(check_valid_user_id(realm.id, str(othello.id)),
-                         "User id is not an integer")
+
+        invalid_uid = "abc"
+        self.assertEqual(check_valid_user_ids(realm.id, [invalid_uid]),
+                         "User IDs[0] is not an integer")
+        invalid_uid = str(othello.id)
+        self.assertEqual(check_valid_user_ids(realm.id, [invalid_uid]),
+                         "User IDs[0] is not an integer")
 
         # User is in different realm
-        self.assertEqual(check_valid_user_id(get_realm("zephyr").id, hamlet.id),
+        self.assertEqual(check_valid_user_ids(get_realm("zephyr").id, [hamlet.id]),
                          "Invalid user ID: %d" % (hamlet.id))
 
         # User is not active
         hamlet.is_active = False
         hamlet.save()
-        self.assertEqual(check_valid_user_id(realm.id, hamlet.id),
-                         "User is deactivated")
-        self.assertEqual(check_valid_user_id(realm.id, hamlet.id, allow_deactivated=True),
+        self.assertEqual(check_valid_user_ids(realm.id, [hamlet.id]),
+                         "User with ID %d is deactivated" % (hamlet.id))
+        self.assertEqual(check_valid_user_ids(realm.id, [hamlet.id], allow_deactivated=True),
                          None)
 
-        # User is bot
-        self.assertEqual(check_valid_user_id(realm.id, bot.id),
-                         "User with id %d is bot" % (bot.id))
+        # User is a bot
+        self.assertEqual(check_valid_user_ids(realm.id, [bot.id]),
+                         "User with ID %d is a bot" % (bot.id))
 
         # Succesfully get non-bot, active user belong to your realm
-        self.assertEqual(check_valid_user_id(realm.id, othello.id), None)
+        self.assertEqual(check_valid_user_ids(realm.id, [othello.id]), None)
 
     def test_cache_invalidation(self) -> None:
         hamlet = self.example_user('hamlet')
@@ -391,26 +397,35 @@ class UserProfileTest(ZulipTestCase):
         self.assertEqual(result[cordelia].email, cordelia)
         self.assertEqual(result[webhook_bot].email, webhook_bot)
 
-    def test_get_membership_realms(self) -> None:
-        zulip_realm = get_realm("zulip")
+    def test_get_accounts_for_email(self) -> None:
+        def check_account_present_in_accounts(user: UserProfile, accounts: List[Dict[str, Optional[str]]]) -> None:
+            for account in accounts:
+                realm = user.realm
+                if account["avatar"] == avatar_url(user) and account["full_name"] == user.full_name \
+                        and account["realm_name"] == realm.name and account["string_id"] == realm.string_id:
+                    return
+            raise AssertionError("Account not found")
+
         lear_realm = get_realm("lear")
+        cordelia_in_zulip = self.example_user("cordelia")
+        cordelia_in_lear = get_user("cordelia@zulip.com", lear_realm)
 
         email = "cordelia@zulip.com"
-        realms = get_membership_realms(email)
-        self.assert_length(realms, 2)
-        self.assertIn(zulip_realm, realms)
-        self.assertIn(lear_realm, realms)
+        accounts = get_accounts_for_email(email)
+        self.assert_length(accounts, 2)
+        check_account_present_in_accounts(cordelia_in_zulip, accounts)
+        check_account_present_in_accounts(cordelia_in_lear, accounts)
 
         email = "CORDelia@zulip.com"
-        realms = get_membership_realms(email)
-        self.assert_length(realms, 2)
-        self.assertIn(zulip_realm, realms)
-        self.assertIn(lear_realm, realms)
+        accounts = get_accounts_for_email(email)
+        self.assert_length(accounts, 2)
+        check_account_present_in_accounts(cordelia_in_zulip, accounts)
+        check_account_present_in_accounts(cordelia_in_lear, accounts)
 
         email = "IAGO@ZULIP.COM"
-        realms = get_membership_realms(email)
-        self.assert_length(realms, 1)
-        self.assertIn(zulip_realm, realms)
+        accounts = get_accounts_for_email(email)
+        self.assert_length(accounts, 1)
+        check_account_present_in_accounts(self.example_user("iago"), accounts)
 
     def test_get_source_profile(self) -> None:
         iago = get_source_profile("iago@zulip.com", "zulip")
@@ -441,7 +456,14 @@ class UserProfileTest(ZulipTestCase):
         cordelia.night_mode = True
         cordelia.enable_offline_email_notifications = False
         cordelia.enable_stream_push_notifications = True
+        cordelia.enter_sends = False
         cordelia.save()
+
+        UserHotspot.objects.filter(user=cordelia).delete()
+        UserHotspot.objects.filter(user=iago).delete()
+        hotspots_completed = ['intro_reply', 'intro_streams', 'intro_topics']
+        for hotspot in hotspots_completed:
+            UserHotspot.objects.create(user=cordelia, hotspot=hotspot)
 
         copy_user_settings(cordelia, iago)
 
@@ -473,6 +495,13 @@ class UserProfileTest(ZulipTestCase):
         self.assertEqual(iago.enable_stream_push_notifications, True)
         self.assertEqual(cordelia.enable_stream_push_notifications, True)
         self.assertEqual(hamlet.enable_stream_push_notifications, False)
+
+        self.assertEqual(iago.enter_sends, False)
+        self.assertEqual(cordelia.enter_sends, False)
+        self.assertEqual(hamlet.enter_sends, True)
+
+        hotspots = list(UserHotspot.objects.filter(user=iago).values_list('hotspot', flat=True))
+        self.assertEqual(hotspots, hotspots_completed)
 
 class ActivateTest(ZulipTestCase):
     def test_basics(self) -> None:

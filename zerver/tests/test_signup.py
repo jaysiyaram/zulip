@@ -820,6 +820,16 @@ earl-test@zulip.com""", ["Denmark"]))
             "You must specify at least one email address.")
         self.check_sent_emails([])
 
+    def test_guest_user_invitation(self) -> None:
+        """
+        Guest user can't invite new users
+        """
+        self.login(self.example_email("polonius"))
+        invitee = "alice-test@zulip.com"
+        self.assert_json_error(self.invite(invitee, ["Denmark"]), "Not allowed for guest users")
+        self.assertEqual(find_key_by_email(invitee), None)
+        self.check_sent_emails([])
+
     def test_invalid_stream(self) -> None:
         """
         Tests inviting to a non-existent stream.
@@ -2020,6 +2030,8 @@ class UserSignUpTest(ZulipTestCase):
         hamlet_in_zulip.default_language = "de"
         hamlet_in_zulip.emojiset = "twitter"
         hamlet_in_zulip.high_contrast_mode = True
+        hamlet_in_zulip.enter_sends = True
+        hamlet_in_zulip.tutorial_status = UserProfile.TUTORIAL_FINISHED
         hamlet_in_zulip.save()
 
         result = self.client_post('/accounts/home/', {'email': email}, subdomain=subdomain)
@@ -2038,6 +2050,8 @@ class UserSignUpTest(ZulipTestCase):
         self.assertEqual(hamlet.emojiset, "google")
         self.assertEqual(hamlet.high_contrast_mode, False)
         self.assertEqual(hamlet.enable_stream_sounds, False)
+        self.assertEqual(hamlet.enter_sends, False)
+        self.assertEqual(hamlet.tutorial_status, UserProfile.TUTORIAL_WAITING)
 
     def test_signup_with_user_settings_from_another_realm(self) -> None:
         email = self.example_email('hamlet')
@@ -2054,6 +2068,8 @@ class UserSignUpTest(ZulipTestCase):
         hamlet_in_zulip.default_language = "de"
         hamlet_in_zulip.emojiset = "twitter"
         hamlet_in_zulip.high_contrast_mode = True
+        hamlet_in_zulip.enter_sends = True
+        hamlet_in_zulip.tutorial_status = UserProfile.TUTORIAL_FINISHED
         hamlet_in_zulip.save()
 
         result = self.client_post('/accounts/home/', {'email': email}, subdomain=subdomain)
@@ -2071,7 +2087,9 @@ class UserSignUpTest(ZulipTestCase):
         self.assertEqual(hamlet_in_lear.default_language, "de")
         self.assertEqual(hamlet_in_lear.emojiset, "twitter")
         self.assertEqual(hamlet_in_lear.high_contrast_mode, True)
+        self.assertEqual(hamlet_in_lear.enter_sends, True)
         self.assertEqual(hamlet_in_lear.enable_stream_sounds, False)
+        self.assertEqual(hamlet_in_lear.tutorial_status, UserProfile.TUTORIAL_FINISHED)
         zulip_path_id = avatar_disk_path(hamlet_in_zulip)
         hamlet_path_id = avatar_disk_path(hamlet_in_zulip)
         self.assertEqual(open(zulip_path_id, "rb").read(), open(hamlet_path_id, "rb").read())

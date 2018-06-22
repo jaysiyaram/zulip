@@ -1029,11 +1029,18 @@ def export_files_from_s3(realm: Realm, bucket_name: str, output_dir: Path,
                       content_type=key.content_type, md5=key.md5)
         record.update(key.metadata)
 
+        if processing_emoji:
+            record['file_name'] = os.path.basename(key.name)
+
         # A few early avatars don't have 'realm_id' on the object; fix their metadata
         user_profile = get_user_profile_by_id(record['user_profile_id'])
         if 'realm_id' not in record:
             record['realm_id'] = user_profile.realm_id
         record['user_profile_email'] = user_profile.email
+
+        # Fix the record ids
+        record['user_profile_id'] = int(record['user_profile_id'])
+        record['realm_id'] = int(record['realm_id'])
 
         if processing_avatars or processing_emoji:
             filename = os.path.join(output_dir, key.name)

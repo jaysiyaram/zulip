@@ -3,6 +3,7 @@ from django.contrib.auth.models import UserManager
 from django.utils.timezone import now as timezone_now
 from zerver.models import UserProfile, Recipient, Subscription, Realm, Stream
 from zerver.lib.upload import copy_avatar
+from zerver.lib.hotspots import copy_hotpots
 
 import base64
 import ujson
@@ -27,12 +28,15 @@ def copy_user_settings(source_profile: UserProfile, target_profile: UserProfile)
         setattr(target_profile, settings_name, value)
 
     setattr(target_profile, "full_name", source_profile.full_name)
+    setattr(target_profile, "enter_sends", source_profile.enter_sends)
     target_profile.save()
 
     if source_profile.avatar_source == UserProfile.AVATAR_FROM_USER:
         from zerver.lib.actions import do_change_avatar_fields
         do_change_avatar_fields(target_profile, UserProfile.AVATAR_FROM_USER)
         copy_avatar(source_profile, target_profile)
+
+    copy_hotpots(source_profile, target_profile)
 
 # create_user_profile is based on Django's User.objects.create_user,
 # except that we don't save to the database so it can used in
